@@ -14,7 +14,7 @@
     "html",
     "html/atom"
   ]
-  revision = "b68f30494add4df6bd8ef5e82803f308e7f7c59c"
+  revision = "8d16fa6dc9a85c1cd3ed24ad08ff21cf94f10888"
 
 [solve-meta]
   analyzer-name = "dep"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 
 type Page struct {
 	PageInfo
-	Videos []VideoInfo
+	VideoInfo
 }
 
 type PageInfo struct {
@@ -22,29 +23,34 @@ type VideoInfo struct {
 	Thumb string
 }
 
-const ()
+const (
+	ErrServer string = "Failed to start server: %v"
+)
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	page := loadPage()
 	renderTemplate(w, "index", page)
 }
 
-func loadPage() (page *Page) {
+func crawlerHandler(w http.ResponseWriter, r *http.Request) {
 	crawler.RunCrawler()
-
-	page := Page{}
-	page.PageInfo{Title: "Phubgo"}
-	page.VideoInfo{Title: "", Thumb: ""}
-
-	return &page
 }
 
-func renderTemplate(w http.ResponseWriter, tmplName string, p *PageInfo) {
+func loadPage() (page *Page) {
+	page = &Page{}
+	page.PageInfo.Title = "Phubgo"
+	return
+}
+
+func renderTemplate(w http.ResponseWriter, tmplName string, p *Page) {
 	tmpl, _ := template.ParseFiles(tmplName + ".html")
-	tmpl.Execute(w, p)
+	tmpl.Execute(w, p.PageInfo)
 }
 
 func main() {
 	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/crawler/", crawlerHandler)
+
+	fmt.Println("Server will be running, please visit http://0.0.0.0:1337")
 	log.Fatal(http.ListenAndServe(":1337", nil))
 }

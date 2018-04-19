@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,14 +13,28 @@ import (
 )
 
 const (
-	ErrHTTPGet    string = "Failed to get specified URL: %v"
-	ErrConfDecode string = "Failed to decode config: %v"
-	AssetsFolder  string = "assets"
+	ErrHTTPGet   string = "Failed to get specified URL: %v"
+	AssetsFolder string = "assets"
 )
 
-func crawler(b io.Reader) (vidKeys, gifKeys []string) {
+var (
+	conf = config.New()
+)
+
+type Item struct {
+	Thumbs []Video
+}
+
+type Video struct {
+	Key string
+	Gif string
+}
+
+func crawler(b io.Reader) (data *Item) {
 	re := regexp.MustCompile(`\/(\S*).php\?(\S*)=ph`)
 	z := html.NewTokenizer(b)
+	data = &Item{Thumbs: []Video{}}
+	video := Video{}
 	for {
 		tokenType := z.Next()
 		switch tokenType {
@@ -37,7 +52,8 @@ func crawler(b io.Reader) (vidKeys, gifKeys []string) {
 					}
 
 					vidKey := strings.Split(tokenAttr.Val, "=")
-					vidKeys = append(vidKeys, vidKey[len(vidKey)-1])
+					// vidKeys = append(vidKeys, vidKey[len(vidKey)-1])
+					video.Key = vidKey[len(vidKey)-1]
 				}
 				continue
 			case "img":
@@ -47,18 +63,20 @@ func crawler(b io.Reader) (vidKeys, gifKeys []string) {
 						continue
 					}
 
-					gifKeys = append(gifKeys, tokenAttr.Val)
+					// gifKeys = append(gifKeys, tokenAttr.Val)
+					video.Gif = tokenAttr.Val
 				}
 				continue
 			}
 		}
+		data.Thumbs = append(data.Thumbs, video)
 	}
 	return
 }
 
 func RunCrawler() {
 	// Get body response from given url
-	url := config.Crawler.URL
+	url := conf.CrawlerInfo.URL
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatalf(ErrHTTPGet, err)
@@ -67,14 +85,19 @@ func RunCrawler() {
 	// Crawl over tokens and get the values
 	b := resp.Body
 	defer b.Close()
-	vidKeys, gifKeys := crawler(b)
+	data := crawler(b)
+	fmt.Println(data)
 
-	// filename := "assets/thumbs/%s.webm", vidKeys
-	// isFileExist := func() (ok bool, err error) {
-	// 	_, err := os.Stat(filename)
-	// 	ok := os.IsNotExist(err)
+	// filename := fmt.Sprintf("assets/thumbs/%s.webm", vidKeys)
+	// isFileExist := func() bool {
+	// 	_, err = os.Stat(filename)
+	// 	if err != nil {
+	// 		return os.IsNotExist(err)
+	// 	}
+	// 	return true
 	// }
-	// ok, err := isFileExist()
 
-	// fmt.Println("gifKeys")
+	// if !isFileExist() {
+	// 	fmt.Println("buat")
+	// }
 }
